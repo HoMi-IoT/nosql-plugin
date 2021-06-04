@@ -2,14 +2,20 @@ package org.homi.plugins.dbs.nosqlplugin;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import org.dizitart.no2.*;
+import org.dizitart.no2.Document;
+import org.dizitart.no2.Nitrite;
+import org.dizitart.no2.NitriteCollection;
 
-import org.homi.plugin.api.CommanderBuilder;
+import org.homi.plugin.api.commander.CommanderBuilder;
+import org.homi.plugin.api.exceptions.InternalPluginException;
 import org.homi.plugin.api.basicplugin.AbstractBasicPlugin;
 import org.homi.plugins.dbs.nosqlspec.*;
-import org.homi.plugins.dbs.nosqlspec.Record;
+import org.homi.plugins.dbs.nosqlspec.query.IQueryComponent;
+import static org.homi.plugins.dbs.nosqlspec.query.QueryBuilder.*;
+import org.homi.plugins.dbs.nosqlspec.record.FieldList;
+import org.homi.plugins.dbs.nosqlspec.record.Record;
+import org.homi.plugins.dbs.nosqlspec.record.Value;
 
 public class NoSQL extends AbstractBasicPlugin {
 	private Nitrite database;
@@ -21,104 +27,94 @@ public class NoSQL extends AbstractBasicPlugin {
 		CommanderBuilder<NoSQLSpec> cb = new CommanderBuilder<>(NoSQLSpec.class);
 
 		this.addCommander(NoSQLSpec.class,
-				cb.onCommandEquals(NoSQLSpec.STORE, this::store).onCommandEquals(NoSQLSpec.DELETE, this::delete)
-						.onCommandEquals(NoSQLSpec.QUERY, this::query).onCommandEquals(NoSQLSpec.UPDATE, this::update)
-						.build());
+				cb.onCommandEquals(NoSQLSpec.STORE, this::store)
+					.onCommandEquals(NoSQLSpec.DELETE, this::delete)
+					.onCommandEquals(NoSQLSpec.QUERY, this::query)
+//					.onCommandEquals(NoSQLSpec.UPDATE, this::update)
+					.build());
+		
+		IQueryComponent query = or(eq("k1", 11), 
+									and(
+										eq("k1", 12),
+										eq("k2", 17)));
+//		q("coolection1", query);
 	}
 
-//	public static void main(String[] args) {
-//		Nitrite db = Nitrite.builder().openOrCreate();
-//		NitriteCollection nc = db.getCollection("collection");
+	public static void main(String[] args) {
+//		Object o = new Custom();
+//		
+//		if(null instanceof Serializable) {
+//			System.out.println("It's serializable");
+//		}
+//		Serializable s = (Serializable)o;
+		Nitrite db = Nitrite.builder().openOrCreate();
+		NitriteCollection nc = db.getCollection("collection");
 //
-//		Record r = new Record();
-//		Record r1 = new Record();
-//		Record r2 = new Record();
-//	
-//	{
-//		key : MasonsClass();
-//		key: [{}, {}, ],
-//		key: {}
-//	}
-//	
-//		r2.addField("key4", new Value(new ArrayList<Object>()));
-//		FieldList fl = new FieldList();
-//		fl.addComponent(new Value(10));
-//		fl.addComponent(r2);
-//		r1.addField("key3", fl);
-//		r.addField("key1", new Value(new Custom()));
-//		r.addField("key2", r1);
-//		NoSQL ns = new NoSQL();
-//
-//		System.out.println(r.printComponent(0));
-//		nc.insert(ns.processRecord(r));
-//		var curs = nc.find();
-//
-//		curs.forEach((d) -> {
-//			System.out.println(d);
-//		});
-//	}
+//		Document d = new Document();
+//		d.put("Hello", new Object());
+//		nc.insert(d);
+//		nc.getClass().getClassLoader().getPlatformClassLoader().
+		Record r = new Record();
+		Record r1 = new Record();
+		Record r2 = new Record();
 
+		r2.addField("key4", new Value<>(new ArrayList<Object>()));
+		FieldList fl = new FieldList();
+		fl.addComponent(new Value<>(Integer.valueOf(10)));
+		fl.addComponent(r2);
+		r1.addField("key3", fl);
+		r.addField("key1", new Value<>(new Custom()));
+		r.addField("key2", r1);
+		r.addField("k7", new Value<>("126"));
+		NoSQL ns = new NoSQL();
+
+		StorageComponentPrinter p = new StorageComponentPrinter();
+		System.out.println(r.accept(p));
+	}
+	
 	@Override
 	public void teardown() {
-		// TODO Auto-generated method stub
+		database.close();
 
 	}
 
-	private Boolean store(Object... params) {
-		NitriteCollection nc = database.getCollection((String) params[0]);
-		Record r = (Record) params[1];
-
-		nc.insert(processRecord(r));
-		return true;
-	}
-
-	private Document processRecord(Record r) {
-		Map<String, Component> recs = r.getValue();
-		Document d = new Document();
-		for (Map.Entry<String, Component> entry : recs.entrySet()) {
-			if (entry.getValue().getType() == Value.class) {
-				d.put(entry.getKey(), entry.getValue().getValue());
-			} else if (entry.getValue().getType() == Record.class) {
-
-				Document doc = processRecord((Record) entry.getValue());
-				d.put(entry.getKey(), doc);
-			} else if (entry.getValue().getType() == FieldList.class) {
-				List<Object> fl = processFieldList((FieldList) entry.getValue());
-				d.put(entry.getKey(), fl);
-			}
+	private Integer store(Object... params) throws InternalPluginException{
+		try {
+			NitriteCollection nc = database.getCollection((String) params[0]);
+			Record record = (Record) params[1];
+			DocumentConverter dc = new DocumentConverter();
+			var r = nc.insert((Document[]) record.accept(dc));
+			return r.getAffectedCount();
+		} catch(Exception e) {
+			throw new InternalPluginException(e);
 		}
-
-		return d;
 	}
 
-	private List<Object> processFieldList(FieldList value) {
-		List<Object> c = new ArrayList<>();
-		List<Component> fieldlist = value.getValue();
-		for (Component comp : fieldlist) {
-			if (comp.getType() == Value.class) {
-				c.add(comp.getValue());
-			} else if (comp.getType() == Record.class) {
-
-				Document doc = processRecord((Record) comp);
-				c.add(doc);
-			} else if (comp.getType() == FieldList.class) {
-				List<Object> fl = processFieldList(comp.getValue());
-				c.add(fl);
-			}
+	private Integer delete(Object... params) throws InternalPluginException{
+		try {
+			NitriteCollection collection = this.database.getCollection((String) params[0]);
+			QueryVisitor qv = new QueryVisitor();
+			IQueryComponent iqv = (IQueryComponent) params[1];
+			
+			var result = collection.remove(iqv.accept(qv));
+			
+			return result.getAffectedCount();
+		} catch(Exception e) {
+			throw new InternalPluginException(e);
 		}
-		return c;
 	}
 
-	private Boolean delete(Object... params) {
-		return true;
-	}
-
-	private Boolean update(Object... params) {
-		return true;
-	}
-
-	private Boolean query(Object... params) {
-		return true;
+	private Object query(Object... params) throws InternalPluginException{
+		try {
+			NitriteCollection collection = this.database.getCollection((String) params[0]);
+			QueryVisitor qv = new QueryVisitor();
+			IQueryComponent iqv = (IQueryComponent) params[1];
+			
+			var result = collection.find(iqv.accept(qv));
+			return null; // convert result to a return value;
+		} catch(Exception e) {
+			throw new InternalPluginException(e);
+		}
 	}
 
 }
