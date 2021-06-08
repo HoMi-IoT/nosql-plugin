@@ -1,5 +1,6 @@
 package org.homi.plugins.dbs.nosqlplugin;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +10,7 @@ import org.homi.plugins.dbs.nosqlspec.query.AndQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.EqualityQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.IQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.IQueryVisitor;
+import org.homi.plugins.dbs.nosqlspec.query.InQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.OrQueryComponent;
 
 public class QueryVisitor implements IQueryVisitor<Filter> {
@@ -34,6 +36,11 @@ public class QueryVisitor implements IQueryVisitor<Filter> {
 	@Override
 	public Filter visit(EqualityQueryComponent qc) {
 		return Filters.eq(qc.getKey(), qc.getValue());
+	}
+
+	@Override
+	public <T extends Serializable & Comparable<T>> Filter visit(InQueryComponent<T> qc) {
+		return Filters.in(qc.getKey(), (Object[])qc.getValues());
 	}
 
 }

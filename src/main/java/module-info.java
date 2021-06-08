@@ -3,5 +3,6 @@ module nosqlplugin {
 	requires nosqlspec;
 	requires nitrite;
 	requires org.homi.plugin.specification;
-	provides org.homi.plugin.api.IPlugin with org.homi.plugins.dbs.nosqlplugin.NoSQL;
+	provides org.homi.plugin.api.basicplugin.IBasicPlugin
+	with org.homi.plugins.dbs.nosqlplugin.NoSQL;
 }

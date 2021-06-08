@@ -1,7 +1,6 @@
 package org.homi.plugins.dbs.nosqlplugin;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.dizitart.no2.Cursor;
@@ -11,6 +10,7 @@ import org.dizitart.no2.NitriteCollection;
 import org.dizitart.no2.WriteResult;
 import org.homi.plugin.api.commander.CommanderBuilder;
 import org.homi.plugin.api.exceptions.InternalPluginException;
+import org.homi.plugin.api.PluginID;
 import org.homi.plugin.api.basicplugin.AbstractBasicPlugin;
 import org.homi.plugins.dbs.nosqlspec.*;
 import org.homi.plugins.dbs.nosqlspec.query.IQueryComponent;
@@ -20,6 +20,7 @@ import org.homi.plugins.dbs.nosqlspec.record.IStorageComponent;
 import org.homi.plugins.dbs.nosqlspec.record.Record;
 import org.homi.plugins.dbs.nosqlspec.record.Value;
 
+@PluginID(id = "NoSQLPlugin")
 public class NoSQL extends AbstractBasicPlugin {
 	private Nitrite database;
 
@@ -41,7 +42,7 @@ public class NoSQL extends AbstractBasicPlugin {
 		database.close();
 	}
 
-	private Integer store(Object... params) throws InternalPluginException{
+	Integer store(Object... params) throws InternalPluginException{
 		try {
 			NitriteCollection collection = database.getCollection((String) params[0]);
 			Record record = (Record) params[1];
@@ -53,7 +54,7 @@ public class NoSQL extends AbstractBasicPlugin {
 		}
 	}
 
-	private Integer delete(Object... params) throws InternalPluginException{
+	Integer delete(Object... params) throws InternalPluginException{
 		try {
 			NitriteCollection collection = this.database.getCollection((String) params[0]);
 			QueryVisitor qv = new QueryVisitor();
@@ -85,7 +86,7 @@ public class NoSQL extends AbstractBasicPlugin {
 		}
 	}
 
-	private FieldList query(Object... params) throws InternalPluginException{
+	FieldList query(Object... params) throws InternalPluginException{
 		try {
 			NitriteCollection collection = this.database.getCollection((String) params[0]);
 			QueryVisitor qv = new QueryVisitor();
