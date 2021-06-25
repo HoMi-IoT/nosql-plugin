@@ -7,11 +7,13 @@ import java.util.List;
 import org.dizitart.no2.Filter;
 import org.dizitart.no2.filters.Filters;
 import org.homi.plugins.dbs.nosqlspec.query.AndQueryComponent;
+import org.homi.plugins.dbs.nosqlspec.query.ContainsQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.EqualityQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.IQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.IQueryVisitor;
 import org.homi.plugins.dbs.nosqlspec.query.InQueryComponent;
 import org.homi.plugins.dbs.nosqlspec.query.OrQueryComponent;
+import org.homi.plugins.dbs.nosqlspec.query.RegexQueryComponent;
 
 public class QueryVisitor implements IQueryVisitor<Filter> {
 		
@@ -43,4 +45,14 @@ public class QueryVisitor implements IQueryVisitor<Filter> {
 		return Filters.in(qc.getKey(), (Object[])qc.getValues());
 	}
 
+	@Override
+	public Filter visit(RegexQueryComponent qc) {
+		return Filters.regex(qc.getKey(), qc.getValue());
+	}
+
+	@Override
+	public Filter visit(ContainsQueryComponent qc) {
+		return Filters.elemMatch(qc.getKey(), qc.getQuery().accept(this));
+	}
+	
 }

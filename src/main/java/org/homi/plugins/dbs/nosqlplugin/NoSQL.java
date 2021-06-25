@@ -26,7 +26,7 @@ public class NoSQL extends AbstractBasicPlugin {
 
 	@Override
 	public void setup() {
-		database = Nitrite.builder().openOrCreate();
+		database = Nitrite.builder().filePath("/home/nicolas/cmpe295/Testing/HoMI_DB.db").openOrCreate();
 		CommanderBuilder<NoSQLSpec> cb = new CommanderBuilder<>(NoSQLSpec.class);
 
 		this.addCommander(NoSQLSpec.class,
